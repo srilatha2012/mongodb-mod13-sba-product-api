@@ -50,6 +50,15 @@ productRouter.put("/:id", async (req, res) => {
         res.status(500).json({ message: error.message })
     }
 
-})
+});
 
+//delete - DELETE
+productRouter.delete("/:id", async (req, res)=>{
+    try {
+        const deletedProduct = await Product.findByIdAndDelete(req.params.id);
+         res.json(deletedProduct);
+    }catch(error){
+       res.status(500).json({ message: error.message });
+    }
+})
 module.exports = productRouter;
