@@ -20,6 +20,62 @@ productRouter.post("/", async (req, res) => {
     }
 });
 
+
+// READ ALL - GET /api/products
+// Get all products with filtering, sorting, and pagination
+// /api/products
+// /api/products?category=Electronics
+// /api/products?minPrice=100&maxPrice=500
+// /api/products?category=Electronics&sortBy=price_asc
+// /api/products?page=2&limit=5
+// /api/products?category=Electronics&minPrice=100&maxPrice=500&sortBy=price_desc&page=1&limit=5
+
+productRouter.get("/", async (req, res) => {
+    try {
+        const { category, minPrice, maxPrice, sortBy } = req.query;
+
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+
+        // Build query dynamically
+        const query = {};
+
+        if (category) {
+            query.category = category;
+        }
+
+        if (minPrice || maxPrice) {
+            query.price = {};
+
+            if (minPrice) {
+                query.price.$gte = Number(minPrice);
+            }
+
+            if (maxPrice) {
+                query.price.$lte = Number(maxPrice);
+            }
+        }
+
+        // Build sort dynamically
+        let sortOption = {};
+
+        if (sortBy === "price_asc") {
+            sortOption.price = 1;
+        } else if (sortBy === "price_desc") {
+            sortOption.price = -1;
+        }
+
+        const products = await Product.find(query)
+            .sort(sortOption)
+            .skip((page - 1) * limit)
+            .limit(limit);
+
+        res.status(200).json(products);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching products" });
+    }
+});
+
 // READ ONE -GET - /api/product/:id
 productRouter.get("/:id", async (req, res) => {
     try {
@@ -52,13 +108,18 @@ productRouter.put("/:id", async (req, res) => {
 
 });
 
-//delete - DELETE
-productRouter.delete("/:id", async (req, res)=>{
+//delete - DELETE - /api/products/:id
+productRouter.delete("/:id", async (req, res) => {
     try {
         const deletedProduct = await Product.findByIdAndDelete(req.params.id);
-         res.json(deletedProduct);
-    }catch(error){
-       res.status(500).json({ message: error.message });
+        if (!deletedProduct) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+        res.json(deletedProduct);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-})
+});
+
+
 module.exports = productRouter;
